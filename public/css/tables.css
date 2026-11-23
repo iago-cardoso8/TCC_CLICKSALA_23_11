@@ -1,0 +1,147 @@
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+th {
+  background: var(--accent-color);
+  color: var(--primary-color);
+  text-align: left;
+  padding: 12px 15px;
+}
+td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+.actions-cell {
+  display: flex;
+  gap: 10px;
+}
+.room-name-cell {
+  white-space: nowrap;
+}
+.room-delete-button {
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border: 0;
+  background: transparent;
+  color: #b3261e;
+  cursor: pointer;
+}
+.room-delete-button:hover,
+.room-delete-button:focus-visible {
+  border-radius: 4px;
+  background: #fde9e7;
+  color: #8f1712;
+}
+.admin-group-row th {
+  padding: 6px 15px;
+  border-top: 6px solid #fff;
+  border-left: 4px solid currentColor;
+  background: #edf3ee;
+  background-clip: padding-box;
+  color: #355b3a;
+  font-size: 0.95rem;
+}
+.admin-group-row:first-child th {
+  border-top-width: 0;
+}
+.admin-group-pendente th {
+  background-color: #fff1c2;
+  color: #76570b;
+}
+.admin-group-aprovado th {
+  background-color: #e7f1e8;
+  color: #355b3a;
+}
+.admin-group-rejeitado th {
+  background-color: #fbe2e2;
+  color: #8c3030;
+}
+.admin-group-count {
+  float: right;
+  color: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.admin-past-row {
+  color: #89918c;
+  background: #f7f8f7;
+}
+.admin-past-row td {
+  border-bottom-color: #e8ebe8;
+}
+.schedule-grid {
+  display: grid;
+  grid-template-columns: 100px repeat(5, 1fr);
+  min-width: 720px;
+  border: 1px solid #ccc;
+  background: white;
+  margin-top: 15px;
+}
+.schedule-grid-scroll {
+  overflow-x: auto;
+}
+.schedule-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+.schedule-toolbar #semana-atual {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-align: center;
+}
+.schedule-toolbar .btn {
+  min-height: 38px;
+  white-space: nowrap;
+}
+.schedule-header {
+  background: #f0f0f0;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+}
+.schedule-cell {
+  padding: 10px 5px;
+  border-right: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  min-height: 40px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.time-col {
+  background: #fafafa;
+  font-weight: bold;
+  color: #555;
+}
+.reserved-slot {
+  background-color: var(--reserved-color);
+  color: var(--danger-color);
+  font-weight: bold;
+  cursor: not-allowed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.titulo-sala {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  font-size: 1.6rem;
+}
+@media (max-width: 600px) {
+  .schedule-toolbar {
+    flex-wrap: wrap;
+  }
+  .schedule-toolbar #semana-atual {
+    order: -1;
+    flex-basis: 100%;
+  }
+}

@@ -1,0 +1,270 @@
+# REST Client (extensão REST Client do VS Code)
+@server=http://localhost:3000
+@email=joao@example.com
+@password=senha123
+
+### ============================================
+### 1. CADASTRO DE USUÁRIO
+### ============================================
+
+# Esperado: 201 Created na primeira execução.
+# Se o email já existir, a API responde 409 Conflict.
+POST {{server}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "João Silva",
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Cadastro duplicado
+POST {{server}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "João Silva",
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Cadastro inválido: senha curta e e-mail inválido
+POST {{server}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "A",
+  "email": "email-invalido",
+  "password": "123"
+}
+
+### Cadastro novo: deve responder 201 e disparar o e-mail de boas-vindas
+# Troque o endereço se ele já tiver sido cadastrado; cadastro recusado não envia e-mail.
+POST {{server}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Pessoa Teste de E-mail",
+  "email": "boas-vindas-clicksala-{{$guid}}@example.com",
+  "password": "senha123"
+}
+
+### ============================================
+### 2. AUTENTICAÇÃO VÁLIDA
+### ============================================
+
+# Esperado: 200 OK com user e token.
+# A resposta nomeada permite reutilizar o JWT nas próximas requisições.
+# @name login
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "tipo": "user"
+}
+
+### ============================================
+### 3. AUTENTICAÇÃO COM CREDENCIAIS INVÁLIDAS
+### ============================================
+
+# Esperado: 401 Unauthorized.
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "senha-incorreta",
+  "tipo": "user"
+}
+
+### ============================================
+### 4. ROTA PROTEGIDA SEM AUTENTICAÇÃO
+### ============================================
+
+# Esperado: 401 Unauthorized.
+# Esta requisição não envia o header Authorization.
+GET {{server}}/solicitacoes
+
+### ============================================
+### 5. MESMA ROTA PROTEGIDA APÓS AUTENTICAÇÃO
+### ============================================
+
+# Esperado: 200 OK.
+# O token é lido diretamente da resposta da requisição nomeada login.
+GET {{server}}/solicitacoes
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Lista válida com filtro (field e value devem ser informados juntos)
+GET {{server}}/solicitacoes?field=status&value=Pendente
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Query inválida: field foi informado sem value (esperado: 400)
+GET {{server}}/solicitacoes?field=status
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Query inválida: field fora dos valores permitidos (esperado: 400)
+GET {{server}}/solicitacoes?field=campo_inexistente&value=x
+Authorization: Bearer {{login.response.body.$.token}}
+
+### ============================================
+### COMPROVAÇÃO OPCIONAL DO TOKEN
+### ============================================
+
+# Esperado: 200 OK com os dados do usuário autenticado.
+GET {{server}}/auth/me
+Authorization: Bearer {{login.response.body.$.token}}
+
+### ============================================
+### SOLICITAÇÕES
+### ============================================
+
+### Listar salas disponíveis
+GET {{server}}/solicitacoes/salas
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Listar horários aprovados da sala 1 (somente cod_sala, data, hora)
+GET {{server}}/solicitacoes/ocupados?cod_sala=1
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Listar todas as solicitações
+GET {{server}}/solicitacoes
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Criar solicitação de sala
+POST {{server}}/solicitacoes
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "sala": "SALA 1",
+  "data": "01/05/2026",
+  "hora": "14:00 - 14:50",
+  "finalidade": "Reunião de projeto"
+}
+
+### Criar solicitação inválida: sala inexistente
+POST {{server}}/solicitacoes
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "cod_sala": 99999,
+  "data": "01/05/2026",
+  "hora": "14:00 - 14:50",
+  "finalidade": "Teste"
+}
+
+### Criar solicitação inválida: data impossível
+POST {{server}}/solicitacoes
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "cod_sala": 1,
+  "data": "31/02/2026",
+  "hora": "14:00 - 14:50",
+  "finalidade": "Teste"
+}
+
+### Criar solicitação inválida: intervalo de horário invertido
+POST {{server}}/solicitacoes
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "cod_sala": 1,
+  "data": "01/10/2026",
+  "hora": "15:00 - 14:00",
+  "finalidade": "Teste"
+}
+
+### Buscar uma solicitação por chave
+GET {{server}}/solicitacoes/1/01%2F05%2F2026/14:00%20-%2014:50
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Parâmetro de rota inválido: cod_sala não é um inteiro positivo (esperado: 400)
+GET {{server}}/solicitacoes/abc/01%2F05%2F2026/14:00%20-%2014:50
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Parâmetro de rota inválido: data inexistente (esperado: 400)
+GET {{server}}/solicitacoes/1/31%2F02%2F2026/14:00%20-%2014:50
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Atualizar status de uma solicitação
+PUT {{server}}/solicitacoes/1/01%2F05%2F2026/14:00%20-%2014:50
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.$.token}}
+
+{
+  "status": "Aprovado"
+}
+
+### Deletar uma solicitação
+DELETE {{server}}/solicitacoes/1/01%2F05%2F2026/14:00%20-%2014:50
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Logout e limpeza do cookie HttpOnly
+POST {{server}}/auth/logout
+Content-Type: application/json
+
+{}
+
+### ADMIN: login
+# @name loginAdmin
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@clicksala.com",
+  "password": "admin123",
+  "tipo": "admin"
+}
+
+### ADMIN: login como usuário comum
+# @name loginUsuario
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "teste@clicksala.com",
+  "password": "password123",
+  "tipo": "user"
+}
+
+### ADMIN: conta comum selecionada como administrador (esperado: 403)
+POST {{server}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "teste@clicksala.com",
+  "password": "password123",
+  "tipo": "admin"
+}
+
+### ADMIN: usuário comum tentando acessar (esperado: 403)
+GET {{server}}/admin/solicitacoes
+Authorization: Bearer {{loginUsuario.response.body.token}}
+
+### ADMIN: listar pendentes (esperado: 200)
+GET {{server}}/admin/solicitacoes?status=Pendente
+Authorization: Bearer {{loginAdmin.response.body.token}}
+
+### ADMIN: aprovar (esperado: 200)
+PUT {{server}}/admin/solicitacoes/1/01%2F10%2F2026/14:40%20-%2015:30
+Content-Type: application/json
+Authorization: Bearer {{loginAdmin.response.body.token}}
+
+{
+  "status": "Aprovado"
+}
+
+### ADMIN: aprovar de novo (esperado: 404, já não está pendente)
+PUT {{server}}/admin/solicitacoes/1/01%2F10%2F2026/14:40%20-%2015:30
+Content-Type: application/json
+Authorization: Bearer {{loginAdmin.response.body.token}}
+
+{
+  "status": "Aprovado"
+}

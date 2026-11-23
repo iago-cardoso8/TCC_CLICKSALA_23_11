@@ -1,0 +1,106 @@
+import { resolve, dirname } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { prisma } from './prismaClient.js';
+import { hashPassword } from '../utils/password.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+interface SeedUsuario {
+  id: number;
+  nome: string;
+  email: string;
+  senha: string;
+  role?: string;
+}
+
+interface SeedSala {
+  id: number;
+  nome: string;
+  bloco: string;
+  tipo: string;
+  capacidade: number;
+  equipamento: string[];
+}
+
+interface SeedSolicitacao {
+  cod_sala: number;
+  data: string;
+  hora: string;
+  finalidade: string;
+  status: string;
+  id_user: number;
+}
+
+interface SeedFile {
+  usuarios: SeedUsuario[];
+  salas: SeedSala[];
+  solicitacoes: SeedSolicitacao[];
+}
+
+async function up() {
+  const file = resolve(__dirname, 'seeders.json');
+  const seed = JSON.parse(readFileSync(file, 'utf-8')) as SeedFile;
+
+  if (process.env.NODE_ENV !== 'production' && Array.isArray(seed.usuarios)) {
+    for (const usuario of seed.usuarios) {
+      const senha = await hashPassword(usuario.senha);
+
+      await prisma.$executeRawUnsafe(
+        `INSERT OR IGNORE INTO usuario (nome, email, senha, role) VALUES (?, ?, ?, ?)`,
+        usuario.nome,
+        usuario.email,
+        senha,
+        usuario.role ?? 'user'
+      );
+    }
+  }
+
+  if (Array.isArray(seed.salas)) {
+    for (const sala of seed.salas) {
+      const equipamentoValue = JSON.stringify(sala.equipamento ?? []);
+      await prisma.sala.upsert({
+        where: { id: sala.id },
+        update: {
+          nome: sala.nome,
+          bloco: sala.bloco,
+          tipo: sala.tipo,
+          capacidade: sala.capacidade,
+          equipamento: equipamentoValue,
+        },
+        create: {
+          id: sala.id,
+          nome: sala.nome,
+          bloco: sala.bloco,
+          tipo: sala.tipo,
+          capacidade: sala.capacidade,
+          equipamento: equipamentoValue,
+        },
+      });
+    }
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    for (const solicitacao of seed.solicitacoes) {
+      const where = {
+        cod_sala: Number(solicitacao.cod_sala),
+        data: solicitacao.data,
+        hora: solicitacao.hora,
+        id_user: solicitacao.id_user,
+      };
+      const existing = await prisma.solicitacao.findFirst({ where });
+      if (!existing) {
+        await prisma.solicitacao.create({
+          data: {
+            ...where,
+            finalidade: solicitacao.finalidade,
+            status: solicitacao.status,
+          },
+        });
+      }
+    }
+  }
+}
+
+export default { up };
